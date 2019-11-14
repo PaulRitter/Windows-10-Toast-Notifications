@@ -14,29 +14,29 @@ def from_here(relative_path):
 
 
 setup(
-    name="win10toast-persist",
+    name="win10toast-dynamic",
     version="0.10.1",
     install_requires=[
         "pypiwin32",
         "setuptools"
     ],
-    packages=["win10toast_persist"],
+    packages=["win10toast_dynamic"],
     license="BSD",
-    url="https://github.com/tnthieding/Windows-10-Toast-Notifications",
+    url="https://github.com/PaulRitter/Windows-10-Toast-Notifications/tree/dynamic",
     download_url='',
     description=(
         "An easy-to-use Python library for displaying "
         "Windows 10 Toast Notifications with support for "
-        "persisting notifications."
+        "dynamic notifications."
     ),
     include_package_data=True,
     package_data={
         '': ['*.txt'],
-        'win10toast_persist': ['data/*.ico'],
+        'win10toast_dynamic': ['data/*.ico'],
     },
     long_description=read('README.rst'),
-    author="Jithu R. Jacob and Tyler N. Thieding",
-    author_email="python@thieding.com",
+    author="Jithu R. Jacob, Tyler N. Thieding, Paul A. Ritter",
+    author_email="TODO",
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Topic :: Utilities",

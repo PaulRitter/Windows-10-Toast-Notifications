@@ -52,7 +52,6 @@ from win32gui import WNDCLASS
 
 class ToastNotifier(object):
     """Create a Windows 10  toast notification.
-
     from: https://github.com/jithurjacob/Windows-10-Toast-Notifications
     """
 
@@ -67,10 +66,12 @@ class ToastNotifier(object):
         :title: notification title
         :msg: notification message
         :icon_path: path to the .ico file to custom notification
-        :duration: delay in seconds before notification self-destruction, None for no-self-destruction
-
+        :duration: delay in seconds before notification self-destruction, None for no-self-destruction, -1 for sticky
         """
-        message_map = {WM_DESTROY: self.on_destroy, }
+        if duration is -1:
+            message_map = {WM_DESTROY: self.on_destroy_sticky, }
+        else:
+            message_map = {WM_DESTROY: self.on_destroy, }
 
         # Register the window class.
         self.wc = WNDCLASS()
@@ -92,7 +93,7 @@ class ToastNotifier(object):
         if icon_path is not None:
             icon_path = path.realpath(icon_path)
         else:
-            icon_path =  resource_filename(Requirement.parse("win10toast_persist"), "win10toast_persist/data/python.ico")
+            icon_path =  resource_filename(Requirement.parse("win10toast_dynamic"), "win10toast_dynamic/data/python.ico")
         icon_flags = LR_LOADFROMFILE | LR_DEFAULTSIZE
         try:
             hicon = LoadImage(self.hinst, icon_path,
@@ -106,14 +107,25 @@ class ToastNotifier(object):
         flags = NIF_ICON | NIF_MESSAGE | NIF_TIP
         nid = (self.hwnd, 0, flags, WM_USER + 20, hicon, "Tooltip")
         Shell_NotifyIcon(NIM_ADD, nid)
-        Shell_NotifyIcon(NIM_MODIFY, (self.hwnd, 0, NIF_INFO,
-                                      WM_USER + 20,
-                                      hicon, "Balloon Tooltip", msg, 200,
-                                      title))
-        if duration is not None:
+
+        self.set_message(self.hwnd, hicon, msg, title)
+
+        if duration is not None and duration is not -1:
             sleep(duration)
             DestroyWindow(self.hwnd)
             UnregisterClass(self.wc.lpszClassName, None)
+
+    def set_message(self, hwindow, icon, msg, title):
+        if callable(msg):
+            my_message = msg()
+        elif type(msg) is str:
+            my_message = msg
+        else:
+            #error typeerror
+        Shell_NotifyIcon(NIM_MODIFY, (self.hwnd, 0, NIF_INFO,
+                                      WM_USER + 20,
+                                      hicon, "Balloon Tooltip", my_message, 200,
+                                      title))
 
     def show_toast(self, title="Notification", msg="Here comes the message",
                     icon_path=None, duration=5, threaded=False):
@@ -125,6 +137,12 @@ class ToastNotifier(object):
         :duration: delay in seconds before notification self-destruction, None for no-self-destruction
 
         """
+        self.title = title
+        self.msg = msg
+        self.icon_path = icon_path
+        self.duration = duration
+        self.threaded = threaded
+
         if not threaded:
             self._show_toast(title, msg, icon_path, duration)
         else:
@@ -142,6 +160,11 @@ class ToastNotifier(object):
             # We have an active notification, let is finish we don't spam them
             return True
         return False
+
+    def on_destroy_sticky(self, hwnd, msg, wparam, lparam):
+        self.on_destroy(hwnd, msg, wparam, lparam)
+        self.show_toast(self.title, self.msg, self.icon_path, self.duration, self.threaded)
+        return None
 
     def on_destroy(self, hwnd, msg, wparam, lparam):
         """Clean after notification ended.
